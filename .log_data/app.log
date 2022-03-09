@@ -1,0 +1,15 @@
+2022-03-02 08:19:14,612  |  Dynotest_App  |  ERROR  |  list index out of range
+Traceback (most recent call last):
+  File "/home/rizal/Programming/python/SmartGreenHouse_Raspi/./app.py", line 120, in <module>
+    if sys.argv[1] == "browser":
+IndexError: list index out of range
+2022-03-02 08:19:19,536  |  Dynotest_App  |  ERROR  |  list index out of range
+Traceback (most recent call last):
+  File "/home/rizal/Programming/python/SmartGreenHouse_Raspi/./app.py", line 120, in <module>
+    if sys.argv[1] == "browser":
+IndexError: list index out of range
+2022-03-02 08:19:46,702  |  Dynotest_App  |  ERROR  |  list index out of range
+Traceback (most recent call last):
+  File "/home/rizal/Programming/python/SmartGreenHouse_Raspi/./app.py", line 120, in <module>
+    if sys.argv[1] == "browser":
+IndexError: list index out of range

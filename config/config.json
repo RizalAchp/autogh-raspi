@@ -1,0 +1,18 @@
+{
+    "kondisi": {
+        "humid_hi": 80,
+        "humid_lo": 70,
+        "temp_hi": 33,
+        "temp_lo": 25,
+        "soil_hi": 1,
+        "soil_lo": 0,
+        "water_hi": 33,
+        "water_lo": 25
+    },
+    "server_connection": {
+        "ip": "0.0.0.0",
+        "port": "5000",
+        "use_reloader": true,
+        "debug": true
+    }
+}
