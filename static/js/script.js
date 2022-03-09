@@ -4,48 +4,57 @@ const categories = [],
   LocIP = location.protocol + "//" + document.domain + ":" + location.port;
 
 const callback_data = (msg) => {
-  const date = new Date().getTime()
-  Datas.value_gauges(msg)
-  Datas.value_charts(msg, date)
-  Datas.value_bullets(msg)
-}
+  const date = new Date().getTime();
+  Datas.change_values(msg, date);
+};
 const Datas = {
-  value_gauges: (data) => {
-    const point = [chartAir.series[0].points[0], chartSoil.series[0].points[0]];
-    point[0].update(data.tinggiair)
-    point[1].update(data.soil)
-  },
-  value_charts: (data, tgl) => {
-    const terus = chartOne.series[0].length >= 100 ? true : false
-    chartOne.series[0].addPoint([tgl, data], true, terus, true)
-    chartOne.series[2].addPoint([tgl, data], true, terus, true)
-  },
-  value_bullets: (data) => {
-    bulletHumidity.series[0].points[0].update(data.humid)
-    bulletTemp.series[0].points[0].update(data.temp)
-    bulletAir.series[0].points[0].update(data.tinggiair)
-    bulletCpu.series[0].points[0].update(data.cpu)
-    bulletRam.series[0].points[0].update(data.ram)
+  change_values: (data, tgl) => {
+    const point = [
+      Gauges.chartAir.series[0].points[0],
+      Gauges.chartSoil.series[0].points[0],
+    ],
+      terus = chartOne.series[0].length >= 100 ? true : false;
+
+    point[0].update(data.tinggiair);
+    point[1].update(data.soil);
+    chartOne.series[0].addPoint([tgl, data], true, terus, true);
+    chartOne.series[2].addPoint([tgl, data], true, terus, true);
+    Bullets.bulletHumid.series[0].points[0].update(data.humid);
+    Bullets.bulletTemp.series[0].points[0].update(data.temp);
+    Bullets.bulletAir.series[0].points[0].update(data.tinggiair);
+    Bullets.bulletSoil.series[0].points[0].update(data.soil);
   },
   send_data: (evnt, data) => {
-    if (data) {
+    const withdata = () => {
       sockio.emit(evnt, data);
-    } else {
-      sockio.emit(evnt);
-    }
+    },
+      withoutdata = () => {
+        sockio.emit(evnt);
+      };
+    return data ? withdata() : withoutdata();
+  },
+  value_resource: (data) => {
+    Bullets.bulletCpu.series[0].points[0].update(data.cpu);
+    Bullets.bulletRam.series[0].points[0].update(data.ram);
   },
   log: (txt) => {
-    const newLine = document.createElement("li"),
-      consoles = document.querySelector('#console'),
-      lines = $('li')
+    const newLine = document.createElement("li");
 
-    newLine.innerHTML = (typeof txt === 'string') ? txt : JSON.stringify(txt, null, 4);
-    if (lines.length > 5) {
-      consoles.removeChild(consoles.firstElementChild)
+    newLine.innerHTML =
+      typeof txt === "string" ? txt : JSON.stringify(txt, null, 4);
 
-    }
-    consoles.appendChild(newLine);
-  }
+    const removes = () => {
+      consoles.removeChild(
+        document.querySelector("#console").firstElementChild
+      );
+    },
+      add = () => {
+        consoles.appendChild(newLine);
+      };
+
+    if (lines.length > 5) {removes();}
+    return add();
+  },
 };
 const Relays = {
   modget: document.getElementById("relmode"),
@@ -73,14 +82,14 @@ const Relays = {
     const status = $("#status_mode");
     if (comp?.checked) {
       // MODE AUTO
-      Datas.send_data("modeauto", null);
+      Datas.send_data("modeauto");
       status.text("MODE AUTO (Close Loop)");
       Relays.get.forEach((element) => (element.disabled = true));
       comp.disabled = false;
-      loading.do()
+      loading.do(2);
     } else {
       // MODE MANUAL
-      Datas.send_data("modemanual", null);
+      Datas.send_data("modemanual");
       status.text("MODE MANUAL (Open Loop)");
       Relays.get.forEach(
         (element) => ((element.disabled = false), (element.checked = false))
@@ -89,31 +98,6 @@ const Relays = {
     }
   },
 };
-
-$(document).ready(() => {
-  sockio = io();
-  sockio.connect(LocIP);
-
-  sockio.on("data_sensor", Datas.callback_data);
-
-  sockio.on("relay_feedback", (msg) => {
-    console.log(msg?.msg.value);
-  });
-
-  sockio.on("mode", (msg) => {
-    console.log(msg?.value);
-  });
-
-  sockio.on("status", (msg) => {
-    console.log(msg?.sts);
-  });
-
-  sockio.on("restart", (msg) => {
-    console.log(msg?.sts);
-  });
-  Relays.modget.checked = true;
-  Relays.change(Relays.modget);
-});
 
 const data_form = {
   get_data: () => {
@@ -124,7 +108,9 @@ const data_form = {
         return obj;
       }, {});
   },
-  change_data: () => {},
+  send_change_data: (elm) => {
+    Datas.send_data('setting_change', data_form.get_data());
+  },
   openForm: () => {
     document.getElementById("myForm").style.display = "block";
   },
@@ -140,32 +126,57 @@ class Image {
   }
   backgroundImage() {
     // console.log("inside function ");
-    var img = document.querySelector(".isloading");
-    var text =
-      "margin:auto;" +
-      "background-image: url(" +
-      this.imgUrl +
-      ");" +
-      "background-size:auto;" +
-      "opacity:0.6;" +
-      "background-blend-mode: darken;" +
-      "height: " +
-      this.size +
-      "vh;" +
-      "z-index: 1;" +
-      "position: fixed;";
-    img.style.cssText = text;
+    const node = $(".isloading")[0],
+      text =
+        "margin:auto;" +
+        "background-image: url(" +
+        this.imgUrl +
+        ");" +
+        "background-size:100%;" +
+        "opacity:0.6;" +
+        "background-blend-mode: darken;" +
+        "height: " +
+        this.size +
+        "vh;" +
+        "position: absolute;" +
+        "z-index: 9;";
+    node.style.cssText = text;
   }
 }
 const loading = {
-  do: () => {
-    var img = document.querySelector(".isloading");
-    const obj = new Image("static/img/animation.gif", 100);
+  do: (delay) => {
+    $("body").prepend('<div class="isloading"></div>');
+    let obj = new Image("static/img/animation.gif", innerHeight);
     obj.backgroundImage();
-    setTimeout(() => {img.remove()}, 2000)
+
+    setTimeout(() => {
+      $(".isloading").remove();
+    }, delay * 1000);
   },
 };
 
-const sidebar_item = {
-  showLog: (text, desc) => {},
-};
+$(document).ready(() => {
+  sockio = io();
+  sockio.connect(LocIP);
+
+  sockio.on("data_sensor", Datas.callback_data);
+
+  sockio.on("relay_feedback", (msg) => {
+    console.log(msg?.msg.value);
+  });
+
+  sockio.on("mode", (msg) => {
+    // console.log(msg?.value);
+    Relays.modget.checked = msg?.value;
+    Relays.change(Relays.modget);
+  });
+
+  sockio.on("status", (msg) => {
+    console.log(msg?.sts);
+    console.log(msg?.msg);
+  });
+
+  sockio.on("restart", (msg) => {
+    console.log(msg?.sts);
+  });
+});

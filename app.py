@@ -31,6 +31,11 @@ _config = ConfigJson()
 config = _config.get_server_config()
 workerObject = None
 
+class AutoghErrorHandler(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+        sock.emit('logs', {"log": args[0]})
+
 class Worker(object):
     instance = None
     def __init__(self, socketio: SocketIO):
@@ -42,7 +47,6 @@ class Worker(object):
 
         self.socketio = socketio
         self.switch = True
-        self.mode_default = True
 
     def do_work_thread(self):
         log_info("background thread dijalankan")
@@ -80,7 +84,7 @@ def connect():
     # if async_mode:
     #     sock.start_background_task(worker.do_work_thread)
 
-    sock.emit('mode', {'value': worker.mode_default})
+    sock.emit('mode', {'value': config['moderelay']})
 
 
 @sock.event

@@ -13,6 +13,19 @@
         "ip": "0.0.0.0",
         "port": "5000",
         "use_reloader": true,
-        "debug": true
+        "debug": true,
+        "moderelay": true
+    },
+    "pin_sensor": {
+        "relays": {
+            "1": 5,
+            "2": 6,
+            "3": 19,
+            "4": 26
+        },
+        "trigger_hcsr": 21,
+        "echo_hcsr": 20,
+        "soil_moisture": 12,
+        "dht": 13
     }
 }

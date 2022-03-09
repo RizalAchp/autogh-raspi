@@ -3,6 +3,9 @@ import json
 import os
 from configparser import ConfigParser
 
+class ConfigError(Exception):
+    pass
+
 class ConfigJson:
     instance = None
     def __init__(self, file:str = "config.json") -> None:
@@ -27,6 +30,9 @@ class ConfigJson:
 
     def get_server_config(self):
         return self._read_config()['server_connection']
+
+    def get_pin_config(self):
+        return self._read_config()['pin_sensor']
 
     def new_config(self, data:dict) -> None:
         os.rename(self.file, self.filebak)

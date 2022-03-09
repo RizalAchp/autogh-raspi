@@ -4,14 +4,21 @@ import board
 import adafruit_dht
 import time
 
-from config import ConfigJson
+from config import ConfigJson, ConfigError
 
 
 class Relay:
-    RELAY_GPIO = {"1": 5, "2": 6, "3": 19, "4": 26}
     _status_relay = {"humid": 0, "temp": 0, "soil": 0, "tinggiair": 0}
 
     def __init__(self, auto: bool = True, jalan: bool = True):
+        _config = ConfigJson()
+        configpin = _config.get_pin_config()
+        self.config = _config.get_kondisi_config()
+        self.RELAY_GPIO = configpin['relays']
+        self.TRIG = configpin['trigger_hcsr']
+        self.ECHO = configpin['echo_hcsr']
+        self.PINSOIL = configpin['soil_moisture']
+        self.DHTPIN = configpin['dht']
         self._auto = auto
         self._jalan = jalan
 
@@ -39,15 +46,16 @@ class Relay:
 
 
 class Sensors(Relay):
-    TRIG = 21
-    ECHO = 20
-    PINSOIL = 12
-    DHT11_PIN = board.D13
 
     data = {'humid': 0, 'temp': 0.0, 'soil': 0, 'tinggiair': 0}
 
     def __init__(self):
         Relay.__init__(self)
+        self.DHT11_PIN = board.D13 if self.DHTPIN == 13 else ConfigError(
+            f'GPIO DHT PADA : GPIO {self.DHTPIN} TIDAK DAPAT DI UBAH, DEFAULT PADA DHT ADALAH 13\
+            jika ingin mengubahnya, ubah pada source code.'
+        )
+
         self._gpio = GPIO
         self._dht = adafruit_dht.DHT11(self.DHT11_PIN, use_pulseio=False)
         self._gpio.setmode(self._gpio.BCM)
@@ -56,9 +64,6 @@ class Sensors(Relay):
         self._gpio.setup(self.PINSOIL, self._gpio.IN)
         for r in self.RELAY_GPIO:
             self._gpio.setup(self.RELAY_GPIO[r], self._gpio.OUT)
-
-        self._config = ConfigJson()
-        self.config = self._config.get_kondisi_config()
 
     def _relay(self):
         status = self._get_status_relay()
@@ -132,7 +137,7 @@ class Sensors(Relay):
                 self._perkondisian_status([idx[x] for x in idx])
                 return self._relay()
             else:
-                return {'ERROR':"Mode Manual Butuh Inputan Relay"}
+                raise Exception({'ERROR':"Mode Manual Butuh Inputan Relay"})
 
     def tutupSensor(self) -> None:
         self._dht.exit()
