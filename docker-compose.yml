@@ -10,9 +10,10 @@ services:
       dockerfile: Dockerfile
 
     ports:
-      - 80:8080
+      - 5000:5000
 
-    devices:
-      - "/dev/gpiomem:/dev/gpiomem"
-
-    privileged: true
+    # ports:
+    #   - 80:5000
+    # devices:
+    #   - "/dev/gpiomem:/dev/gpiomem"
+    # privileged: true

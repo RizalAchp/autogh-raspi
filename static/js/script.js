@@ -5,7 +5,9 @@ const categories = [],
 
 const callback_data = (msg) => {
   const date = new Date().getTime();
-  Datas.change_values(msg, date);
+  // Datas.change_values(msg, date);
+  Datas.value_resource(msg.resource)
+  console.log(msg.resource)
 };
 const Datas = {
   change_values: (data, tgl) => {
@@ -24,6 +26,11 @@ const Datas = {
     Bullets.bulletAir.series[0].points[0].update(data.tinggiair);
     Bullets.bulletSoil.series[0].points[0].update(data.soil);
   },
+
+  value_resource: (data) => {
+    Bullets.bulletCpu.series[0].points[0].update(data.cpu);
+    Bullets.bulletRam.series[0].points[0].update(data.ram);
+  },
   send_data: (evnt, data) => {
     const withdata = () => {
       sockio.emit(evnt, data);
@@ -32,10 +39,6 @@ const Datas = {
         sockio.emit(evnt);
       };
     return data ? withdata() : withoutdata();
-  },
-  value_resource: (data) => {
-    Bullets.bulletCpu.series[0].points[0].update(data.cpu);
-    Bullets.bulletRam.series[0].points[0].update(data.ram);
   },
   log: (txt) => {
     const newLine = document.createElement("li");
@@ -69,11 +72,12 @@ const Relays = {
     }
     return Datas.send_data("onrelaychange", {value: kondisi});
   },
-  set: (kond) => {
+  set: (konds) => {
     let k = 0;
+    kond = konds.value
     const kondisi = [];
     for (; k < Relays.kondisi.length; k++) {
-      Relays.get[k].checked = kond ? kond[k] : Relays.kondisi[k];
+      Relays.get[k].checked = kond ? kond[k] : false
       kondisi.push(Relays.get[k].checked);
     }
     return kondisi;
@@ -159,11 +163,9 @@ $(document).ready(() => {
   sockio = io();
   sockio.connect(LocIP);
 
-  sockio.on("data_sensor", Datas.callback_data);
-
-  sockio.on("relay_feedback", (msg) => {
-    console.log(msg?.msg.value);
-  });
+  sockio.on("data_sensor", callback_data);
+  sockio.on("resource", Datas.value_resource)
+  sockio.on("relay_feedback", Relays.set)
 
   sockio.on("mode", (msg) => {
     // console.log(msg?.value);
@@ -179,4 +181,8 @@ $(document).ready(() => {
   sockio.on("restart", (msg) => {
     console.log(msg?.sts);
   });
+
+  setInterval(() => {
+    sockio.emit("get_resource");
+  }, 10 * 1000)
 });

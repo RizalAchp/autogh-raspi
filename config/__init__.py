@@ -35,7 +35,11 @@ class ConfigJson:
         return self._read_config()['pin_sensor']
 
     def new_config(self, data:dict) -> None:
+        data = self._read_config()
+        data["kondisi"] = data["kondisi"]
+
         os.rename(self.file, self.filebak)
+
         return self._new_config(data, indent=4)
 
     def default_config(self):
@@ -84,31 +88,12 @@ class ConfigIni(ConfigParser):
             self.kondisi_config[k] = self.fromStr(kond[k])
         return self.kondisi_config
 
-    def ubah_config(self):
+    def ubah_config(self, change):
         pass
 
     def default_config(self):
         pass
 
-
-template_data = {
-    "kondisi": {
-        "humid-hi": 80,
-        "humid-lo": 70,
-        "temp-hi": 33.0,
-        "temp-lo": 25.0,
-        "soil-hi": 100,
-        "soil-lo": 0,
-        "water-hi": 33,
-        "water-lo": 25
-    },
-    "server-connection": {
-        "ip": "0.0.0.0",
-        "port": 5000,
-        "use_reloader": False,
-        "debug": False
-    }
-}
 
 if __name__ == "__main__":
     config = ConfigJson()

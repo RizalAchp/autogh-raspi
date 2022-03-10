@@ -1,125 +1,112 @@
 #!/usr/bin/env python3
-
+import sys
 from log import log_exception, log_info
 from flask_socketio import SocketIO
 from flask import Flask, render_template, request
-from config import ConfigJson
-import socket
-import sys
+from systemsinfo import getresource
+
 import eventlet
 eventlet.monkey_patch()
 
+from sensor_gpio_raspi import Sensors
 
-# in_raspi = True
-# if in_raspi:
-#     from sensor_gpio_raspi import Sensors
-# else:
-#     from onarduino.sensor_serial import TheSerial, Data, parseStr, SerialException,\
-#         PortNotOpenError, SerialTimeoutException
-#     ser = TheSerial()
-#     ser.port = None
-
-
-# import redis
-# from other import SERVER, PORT
-# db = redis.StrictRedis('localhost', 6379, 0)
 async_mode = 'eventlet'
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "secret!"
 sock = SocketIO(app, async_mode=async_mode)
-_config = ConfigJson()
-config = _config.get_server_config()
-workerObject = None
 
 class AutoghErrorHandler(Exception):
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
-        sock.emit('logs', {"log": args[0]})
+    pass
 
-class Worker(object):
+class Worker(Sensors):
     instance = None
     def __init__(self, socketio: SocketIO):
-        if type(self).instance is None:
-            # Initialization
-            type(self).instance = self
-        else:
-            raise RuntimeError("hanya satu instance 'Worker' yang dapat berjalan")
+        super().__init__()
 
         self.socketio = socketio
         self.switch = True
+        self.mode = True
 
     def do_work_thread(self):
         log_info("background thread dijalankan")
         try:
             while self.switch:
                 try:
-                    pass
+                    sock.emit('data_sensor', self.semua_value())
+                    if self.mode:
+                        self.relay_fb(self.relay())
+                    sock.emit('status', {'sts':'ini thread'})
+                    sock.sleep(5)
 
                 except IndexError:
                     continue
 
         except (
-            Exception
+            RuntimeError, Exception, AutoghErrorHandler
         ) as e:
             log_exception(e)
-            sock.emit('my_response', {
-                'value': 'error', 'desc': 'An error has occuired', 'info': str(e)
-            })
+            sock.emit('logs', { 'log': str(e) })
+
+    def relay_fb(self, status:list):
+        sock.emit('relay_feedback', {'value': status})
+
+    def start(self):
+        self.switch = True
 
     def restart(self):
         self.switch = False
+        self.tutupSensor()
+        super().__init__()
         self.switch = True
 
 
 @app.route('/')
 def main(): return render_template('index.html', async_mode=sock.async_mode)
 
-worker = Worker(sock)
-
 @sock.event
 def connect():
-    global worker
-    # worker.start()
-    # ser.port = ser.get_serial_name(0)
-    # if async_mode:
-    #     sock.start_background_task(worker.do_work_thread)
+    global worker, config
+    if async_mode:
+        sock.start_background_task(worker.do_work_thread)
 
     sock.emit('mode', {'value': config['moderelay']})
-
 
 @sock.event
 def onrelaychange(msg):
     # ser.sending_data(f'{msg["num"]}')
-    sock.emit('relay_feedback', {'msg':msg})
-
+    status = worker.relay(msg['value'])
+    worker.relay_fb(status)
 
 @sock.event
-def modemanual():
-    # ser.sending_data('4') # 3 mode auto | 4 mode manual
-    sock.emit('status', {'sts': False})
+def get_resource():
+    sock.emit('resource', getresource())
 
+@sock.event
+def modemanual(msg):
+    global worker
+    if worker.mode:
+        worker.mode = False
+    worker.relay(msg['value'])
+    worker.restart()
 
 @sock.event
 def modeauto():
-    # ser.sending_data('3')
-    sock.emit('status', {'sts': True})
-
+    global worker
+    worker.mode = True
+    worker.restart()
 
 @sock.event
 def setting_change(msg):
-    sock.emit('status', {'sts': 'setting_change', 'msg':msg})
-
+    sock.emit('status', {'msg':msg})
 
 @sock.event
 def setting_default():
     sock.emit('status', {'sts': 'setting_default'})
 
 
-@sock.event
-def shutdown_server():
-    sock.emit('status', {'sts': 'shutdown_server'})
-
-
+worker = Worker(sock)
+worker.start()
+config = worker._config.get_server_config()
 if __name__ == "__main__":
     try:
         sock.run(

@@ -9,8 +9,8 @@ def sizeit(byte):
 
 def getresource():
     return {
-        'cpuperc':p.cpu_percent() ,
-        'memused':sizeit(p.virtual_memory().used)
+        'cpu':p.cpu_percent() ,
+        'mem':sizeit(p.virtual_memory().used)
     }
 # Driver Function
 if __name__ == "__main__":
