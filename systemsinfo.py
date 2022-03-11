@@ -7,7 +7,7 @@ def sizeit(byte):
             return round(byte, 2)
         byte = byte/1024
 
-def getresource():
+def getResource():
     return {
         'cpu':p.cpu_percent() ,
         'mem':sizeit(p.virtual_memory().used)

@@ -5,7 +5,7 @@ const categories = [],
 
 const callback_data = (msg) => {
   const date = new Date().getTime();
-  // Datas.change_values(msg, date);
+  Datas.change_values(msg, date);
   Datas.value_resource(msg.resource)
   console.log(msg.resource)
 };
@@ -112,7 +112,7 @@ const data_form = {
         return obj;
       }, {});
   },
-  send_change_data: (elm) => {
+  send_change_data: () => {
     Datas.send_data('setting_change', data_form.get_data());
   },
   openForm: () => {

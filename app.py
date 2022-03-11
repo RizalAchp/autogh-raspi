@@ -3,7 +3,7 @@ import sys
 from log import log_exception, log_info
 from flask_socketio import SocketIO
 from flask import Flask, render_template, request
-from systemsinfo import getresource
+from systemsinfo import getResource
 
 import eventlet
 eventlet.monkey_patch()
@@ -79,7 +79,7 @@ def onrelaychange(msg):
 
 @sock.event
 def get_resource():
-    sock.emit('resource', getresource())
+    sock.emit('resource', getResource())
 
 @sock.event
 def modemanual(msg):
