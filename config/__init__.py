@@ -7,14 +7,7 @@ class ConfigError(Exception):
     pass
 
 class ConfigJson:
-    instance = None
     def __init__(self, file:str = "config.json") -> None:
-        if type(self).instance is None:
-            # Initialization
-            type(self).instance = self
-        else:
-            raise RuntimeError("hanya satu instance 'ConfigJson' yang dapat berjalan")
-
         self.file = os.path.join('./config', file)
         self.filebak = "{}.bak".format(self.file)
 
@@ -52,11 +45,6 @@ class ConfigJson:
             f.close()
 
             return None
-
-    @classmethod
-    def reset(cls):
-        cls.instance = None
-        cls.instance = ConfigJson()
 
 
 class ConfigIni(ConfigParser):
