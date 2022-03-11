@@ -20,7 +20,7 @@ const Datas = {
     point[0].update(data.tinggiair);
     point[1].update(data.soil);
     chartOne.series[0].addPoint([tgl, data.humid], true, terus, true);
-    chartOne.series[2].addPoint([tgl, data.temp], true, terus, true);
+    chartOne.series[1].addPoint([tgl, data.temp], true, terus, true);
     Bullets.bulletHumid.series[0].points[0].update(data.humid);
     Bullets.bulletTemp.series[0].points[0].update(data.temp);
     Bullets.bulletAir.series[0].points[0].update(data.tinggiair);
