@@ -218,8 +218,8 @@ class Sensors(Relay):
 
     def _baca_soil(self):
         if self._gpio.input(self.PINSOIL):
-            return 1
-        return 0
+            return 100
+        return 10
 
     def _baca_tinggi_air(self):
         self._gpio.output(self.TRIG, True)

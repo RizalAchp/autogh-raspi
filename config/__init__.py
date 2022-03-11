@@ -28,12 +28,12 @@ class ConfigJson:
         return self._read_config()['pin_sensor']
 
     def new_config(self, data:dict) -> None:
-        data = self._read_config()
-        data["kondisi"] = data["kondisi"]
+        _data = self._read_config()
+        _data["kondisi"] = data
 
         os.rename(self.file, self.filebak)
 
-        return self._new_config(data, indent=4)
+        return self._new_config(_data, indent=4)
 
     def default_config(self):
         os.replace(self.filebak, self.file)

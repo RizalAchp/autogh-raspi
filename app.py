@@ -97,11 +97,17 @@ def modeauto():
 
 @sock.event
 def setting_change(msg):
-    sock.emit('status', {'msg':msg})
+    global worker
+    worker._config.new_config(msg)
+    worker.restart()
+    sock.emit("restart")
 
 @sock.event
 def setting_default():
-    sock.emit('status', {'sts': 'setting_default'})
+    global worker
+    worker._config.default_config()
+    worker.restart()
+    sock.emit("restart")
 
 
 worker = Worker(sock)
