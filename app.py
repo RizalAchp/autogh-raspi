@@ -15,11 +15,14 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = "secret!"
 sock = SocketIO(app, async_mode=async_mode)
 
+
 class AutoghErrorHandler(Exception):
     pass
 
+
 class Worker(Sensors):
     instance = None
+
     def __init__(self, socketio: SocketIO):
         super().__init__()
 
@@ -35,7 +38,6 @@ class Worker(Sensors):
                     sock.emit('data_sensor', self.semua_value())
                     if self.mode:
                         self.relay_fb(self.relay())
-                    sock.emit('status', {'sts':'ini thread'})
                     sock.sleep(5)
 
                 except IndexError:
@@ -45,9 +47,9 @@ class Worker(Sensors):
             RuntimeError, Exception, AutoghErrorHandler
         ) as e:
             log_exception(e)
-            sock.emit('logs', { 'log': str(e) })
+            sock.emit('logs', {'log': str(e)})
 
-    def relay_fb(self, status:list):
+    def relay_fb(self, status: list):
         sock.emit('relay_feedback', {'value': status})
 
     def start(self):
@@ -63,31 +65,36 @@ class Worker(Sensors):
 @app.route('/')
 def main(): return render_template('index.html', async_mode=sock.async_mode)
 
+
 @sock.event
 def connect():
-    global worker, config
+    global worker
     if async_mode:
         sock.start_background_task(worker.do_work_thread)
+    sock.emit('mode', {'value': worker.mode})
 
-    sock.emit('mode', {'value': config['moderelay']})
 
 @sock.event
 def onrelaychange(msg):
-    # ser.sending_data(f'{msg["num"]}')
     status = worker.relay(msg['value'])
     worker.relay_fb(status)
+
 
 @sock.event
 def get_resource():
     sock.emit('resource', getResource())
+
 
 @sock.event
 def modemanual(msg):
     global worker
     if worker.mode:
         worker.mode = False
-    worker.relay(msg['value'])
+
+    status = worker.relay(msg['value'])
+    worker.relay_fb(status)
     worker.restart()
+
 
 @sock.event
 def modeauto():
@@ -95,12 +102,14 @@ def modeauto():
     worker.mode = True
     worker.restart()
 
+
 @sock.event
 def setting_change(msg):
     global worker
     worker._config.new_config(msg)
     worker.restart()
     sock.emit("restart")
+
 
 @sock.event
 def setting_default():
@@ -117,10 +126,10 @@ if __name__ == "__main__":
     try:
         sock.run(
             app,
-            host = config['ip'],
-            port = config['port'],
-            use_reloader = config['use_reloader'],
-            debug = config['debug']
+            host=config['ip'],
+            port=config['port'],
+            use_reloader=config['use_reloader'],
+            debug=config['debug']
         )
 
     except KeyboardInterrupt:

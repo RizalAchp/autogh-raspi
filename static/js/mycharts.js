@@ -32,7 +32,7 @@ const Bullets = {
     series: [{
       data: [{y: 36, target: 90}],
       color: colors[5]
-    }], tooltip: {pointFormat: '<b>{point.y} C</b> (Batas Suhu {point.target} C)'}
+    }], tooltip: {pointFormat: '<b>{point.y} %</b> (Max Humidity Ruangan {point.target} %)'}
   })),
 
   bulletTemp: new Highcharts.chart('bullettemp', Highcharts.merge(bulletOptions, {
@@ -40,16 +40,16 @@ const Bullets = {
     title: {text: 'Temperature DHT11', style: {"fontSize": "14px"}},
     yAxis: {
       plotBands: [{
-        from: 0, to: 20, color: '#666'
+        from: 0, to: 20.0, color: '#666'
       }, {
-        from: 20, to: 40, color: '#999'
+        from: 20.0, to: 40.0, color: '#999'
       }, {
-        from: 50, to: 9e9, color: '#bbb'
+        from: 50.0, to: 9e9, color: '#bbb'
       }], title: null
     }, series: [{
-      data: [{y: 10, target: 40}],
+      data: [{y: 10.0, target: 40.0}],
       color: colors[1]
-    }], tooltip: {pointFormat: '<b>{point.y}</b> (with target at {point.target})'}
+    }], tooltip: {pointFormat: '<b>{point.y} C</b> (Max Suhu Rangan {point.target} C)'}
   })),
 
   bulletAir: new Highcharts.chart('bulletair', Highcharts.merge(bulletOptions, {
@@ -66,7 +66,7 @@ const Bullets = {
     }, series: [{
       data: [{y: 1, target: 120}], color: colors[7]
     }],
-    tooltip: {pointFormat: '<b>{point.y}</b> (with target at {point.target})'}
+    tooltip: {pointFormat: '<b>{point.y} cm</b> (Max Ketinggian Air {point.target} cm)'}
   })),
 
   bulletCpu: new Highcharts.chart('bulletcpu', Highcharts.merge(bulletOptions, {
@@ -83,7 +83,7 @@ const Bullets = {
     }, series: [{
       data: [{y: 1, target: 80}],
       color: colors[2]
-    }], tooltip: {pointFormat: '<b>{point.y} C</b> (Max Temp CPU {point.target} C)'}
+    }], tooltip: {pointFormat: '<b>{point.y} %</b> (Max Uage CPU {point.target} %)'}
   })),
   bulletRam: new Highcharts.chart('bulletram', Highcharts.merge(bulletOptions, {
     chart: {marginTop: 20},
@@ -100,7 +100,7 @@ const Bullets = {
       data: [{y: 500, target: 1800}],
       color: colors[3]
     }], tooltip: {
-      pointFormat: '<b>{point.y}</b> (with target at {point.target})'
+      pointFormat: '<b>{point.y} KB</b> (Max Usage RAM {point.target} KB)'
     }
   })),
   bulletSoil: new Highcharts.chart('bulletsoil', Highcharts.merge(bulletOptions, {
@@ -212,6 +212,7 @@ const chartOne = new Highcharts.chart({
   subtitle: {text: "Humidity (%) & Temperature (C)", style: {"fontSize": "10px"}},
   exporting: {enabled: true},
   xAxis: {
+    type: "datetime",
     title: {
       text: "Time",
     },

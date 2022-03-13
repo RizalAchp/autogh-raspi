@@ -17,8 +17,8 @@ class HasilDHT:
 
     def __init__(self, error_code, temperature, humidity):
         self.error_code = error_code
-        self.temperature = temperature
-        self.humidity = humidity
+        self.temperature = round(temperature)
+        self.humidity = round(humidity)
 
     def is_valid(self):
         return self.error_code == HasilDHT.ERR_NO_ERROR
@@ -29,14 +29,15 @@ class DHT11:
 
     __pin = 0
 
-    def __init__(self, pin):
+    def __init__(self, gpio, pin):
         self.__pin = pin
+        self.__gpio = gpio
 
     def read(self):
-        GPIO.setup(self.__pin, GPIO.OUT)
-        self.__send_and_sleep(GPIO.HIGH, 0.05)
-        self.__send_and_sleep(GPIO.LOW, 0.02)
-        GPIO.setup(self.__pin, GPIO.IN, GPIO.PUD_UP)
+        self.__gpio.setup(self.__pin, self.__gpio.OUT)
+        self.__send_and_sleep(self.__gpio.HIGH, 0.05)
+        self.__send_and_sleep(self.__gpio.LOW, 0.02)
+        self.__gpio.setup(self.__pin, self.__gpio.IN, self.__gpio.PUD_UP)
         data = self.__collect_input()
 
         pull_up_lengths = self.__parse_data_pull_up_lengths(data)
@@ -64,7 +65,7 @@ class DHT11:
         return HasilDHT(HasilDHT.ERR_NO_ERROR, temperature, humidity)
 
     def __send_and_sleep(self, output, sleep):
-        GPIO.output(self.__pin, output)
+        self.__gpio.output(self.__pin, output)
         time.sleep(sleep)
 
     def __collect_input(self):
@@ -73,7 +74,7 @@ class DHT11:
         last = -1
         data = []
         while True:
-            current = GPIO.input(self.__pin)
+            current = self.__gpio.input(self.__pin)
             data.append(current)
             if last != current:
                 unchanged_count = 0
@@ -92,32 +93,37 @@ class DHT11:
             current = data[i]
             current_length += 1
             if state == 1:
-                if current == GPIO.LOW:
+                if current == self.__gpio.LOW:
                     state = 2
                     continue
-                else: continue
+                else:
+                    continue
             if state == 2:
-                if current == GPIO.HIGH:
+                if current == self.__gpio.HIGH:
                     state = 3
                     continue
-                else: continue
+                else:
+                    continue
             if state == 3:
-                if current == GPIO.LOW:
+                if current == self.__gpio.LOW:
                     state = 4
                     continue
-                else: continue
+                else:
+                    continue
             if state == 4:
-                if current == GPIO.HIGH:
+                if current == self.__gpio.HIGH:
                     current_length = 0
                     state = 5
                     continue
-                else: continue
+                else:
+                    continue
             if state == 5:
-                if current == GPIO.LOW:
+                if current == self.__gpio.LOW:
                     lengths.append(current_length)
                     state = 4
                     continue
-                else: continue
+                else:
+                    continue
 
         return lengths
 
@@ -164,10 +170,11 @@ class DHT11:
     def __calculate_checksum(self, the_bytes):
         return the_bytes[0] + the_bytes[1] + the_bytes[2] + the_bytes[3] & 255
 
+
 class Relay:
     _status_relay = {"humid": 0, "temp": 0, "soil": 0, "tinggiair": 0}
 
-    def __init__(self, auto: bool = True, jalan: bool = True):
+    def __init__(self):
         self._config = ConfigJson()
         configpin = self._config.get_pin_config()
         self.config = self._config.get_kondisi_config()
@@ -176,8 +183,8 @@ class Relay:
         self.ECHO = configpin['echo_hcsr']
         self.PINSOIL = configpin['soil_moisture']
         self.DHT11_PIN = configpin['dht']
-        self._auto = auto
-        self._jalan = jalan
+        self._auto = True
+        self._jalan = True
 
     def _whatMode(self):
         if self._auto:
@@ -203,12 +210,13 @@ class Relay:
 
 class Sensors(Relay):
 
-    data = {'humid': 0, 'temp': 0.0, 'soil': 0, 'tinggiair': 0}
+    data = {'humid': 0, 'temps': 0, 'soil': 0, 'tinggiair': 0}
 
     def __init__(self):
         Relay.__init__(self)
         self._gpio = GPIO
-        self._dht = DHT11(self.DHT11_PIN)
+        self._gpio.setwarnings(False)
+        self._dht = DHT11(self._gpio, self.DHT11_PIN)
         self._gpio.setmode(self._gpio.BCM)
         self._gpio.setup(self.TRIG, self._gpio.OUT)
         self._gpio.setup(self.ECHO, self._gpio.IN)
@@ -232,7 +240,7 @@ class Sensors(Relay):
         while self._gpio.input(self.ECHO) == 1:
             stops = time.time()
 
-        return round(((stops - starts) * 34300) / 2, None)
+        return self.config['water_hi'] - round(((stops - starts) * 34300) / 2)
 
     def __baca_dht(self):
         instance = self._dht.read()
@@ -242,13 +250,13 @@ class Sensors(Relay):
             return self._baca_dht()
 
     def _baca_dht(self):
-        return (self.data['humid'], self.data['temp'])
+        return (self.data['humid'], self.data['temps'])
 
     def semua_value(self) -> dict:
         try:
             self.data['soil'] = self._baca_soil()
             self.data['tinggiair'] = self._baca_tinggi_air()
-            self.data['humid'], self.data['temp'] = self.__baca_dht()
+            self.data['humid'], self.data['temps'] = self.__baca_dht()
             return self.data
 
         except RuntimeError:
@@ -275,34 +283,36 @@ class Sensors(Relay):
             elif self.data['humid'] <= self.config['humid_lo']:
                 self._status_relay['humid'] = 0
 
-            if self.data['temp'] >= self.config['temp_hi']:
+            if self.data['temps'] >= self.config['temp_hi']:
                 self._status_relay['temp'] = 1
-            elif self.data['temp'] <= self.config['temp_lo']:
+            elif self.data['temps'] <= self.config['temp_lo']:
                 self._status_relay['temp'] = 0
 
-            if self.data['soil'] >= self.config['soil_hi']:
-                self._status_relay['temp'] = 1
-            elif self.data['temp'] <= self.config['soil_lo']:
-                self._status_relay['temp'] = 0
+            if self.data['soil']:
+                self._status_relay['soil'] = 1
+            else:
+                self._status_relay['soil'] = 0
 
-            if self.data['tinggiair'] >= 80:
+            if self.data['tinggiair'] >= self.config['water_hi']:
                 self._status_relay['tinggiair'] = 1
-            elif self.data['tinggiair'] <= 30:
+            elif self.data['tinggiair'] <= self.config['water_lo']:
                 self._status_relay['tinggiair'] = 0
             return self._relay()
 
     def tutupSensor(self) -> None:
         self._gpio.cleanup()
 
+
 if __name__ == "__main__":
     sensor = Sensors()
     relay = Relay()
     for i in range(10):
         try:
-            print(sensor.semua_value())
+            hasil = sensor.semua_value()
+            print(hasil)
+            print(type(hasil['temps']))
 
             time.sleep(5.0)
         except (Exception, KeyboardInterrupt) as error:
             print(f'Measurement stopped by User | {error}')
         time.sleep(2.0)
-

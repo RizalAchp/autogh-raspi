@@ -6,9 +6,9 @@ const categories = [],
 const callback_data = (msg) => {
   const date = new Date().getTime();
   Datas.change_values(msg, date);
-  Datas.value_resource(msg.resource)
-  console.log(msg.resource)
 };
+
+
 const Datas = {
   change_values: (data, tgl) => {
     const point = [
@@ -17,14 +17,15 @@ const Datas = {
     ],
       terus = chartOne.series[0].length >= 100 ? true : false;
 
+    console.log(typeof data.temps)
     point[0].update(data.tinggiair);
     point[1].update(data.soil);
     chartOne.series[0].addPoint([tgl, data.humid], true, terus, true);
-    chartOne.series[1].addPoint([tgl, data.temp], true, terus, true);
+    chartOne.series[1].addPoint([tgl, data.temps], true, terus, true);
     Bullets.bulletHumid.series[0].points[0].update(data.humid);
-    Bullets.bulletTemp.series[0].points[0].update(data.temp);
-    Bullets.bulletAir.series[0].points[0].update(data.tinggiair);
+    Bullets.bulletTemp.series[0].points[0].update(data.temps);
     Bullets.bulletSoil.series[0].points[0].update(data.soil);
+    Bullets.bulletAir.series[0].points[0].update(data.tinggiair);
   },
 
   value_resource: (data) => {
@@ -59,12 +60,11 @@ const Datas = {
     return add();
   },
 };
+
+
 const Relays = {
   modget: document.getElementById("relmode"),
   get: document.querySelectorAll("input[type=checkbox]#relay"),
-  mode: () => {
-    return Relays.modget.checked ? "auto" : "manual";
-  },
   setManual: () => {
     const kondisi = [];
     for (let i = 0; i < Relays.get.length; i++) {
@@ -76,29 +76,26 @@ const Relays = {
     let k = 0;
     kond = konds.value
     const kondisi = [];
-    for (; k < Relays.kondisi.length; k++) {
-      Relays.get[k].checked = kond ? kond[k] : false
+    for (; k < Relays.get.length; k++) {
+      Relays.get[k].checked = kond[k] ? true : false;
       kondisi.push(Relays.get[k].checked);
     }
     return kondisi;
   },
-  change: (comp) => {
+  change: () => {
     const status = $("#status_mode");
-    if (comp?.checked) {
+    if (Relays.modget.checked) {
       // MODE AUTO
       Datas.send_data("modeauto");
       status.text("MODE AUTO (Close Loop)");
-      Relays.get.forEach((element) => (element.disabled = true));
-      comp.disabled = false;
-      loading.do(2);
+      Relays.get.forEach((element) => (element.disabled = true, element.checked = false));
+      Relays.modget.disabled = false;
+      loading.do(1);
     } else {
       // MODE MANUAL
-
       Datas.send_data("modemanual", {value: [false, false, false, false]});
       status.text("MODE MANUAL (Open Loop)");
-      Relays.get.forEach(
-        (element) => ((element.disabled = false), (element.checked = false))
-      );
+      Relays.get.forEach((element) => (element.disabled = false, element.checked = false));
     }
   },
 };
@@ -132,18 +129,9 @@ class Image {
     // console.log("inside function ");
     const node = $(".isloading")[0],
       text =
-        "margin:auto;" +
-        "background-image: url(" +
-        this.imgUrl +
-        ");" +
-        "background-size:100%;" +
-        "opacity:0.6;" +
-        "background-blend-mode: darken;" +
-        "height: " +
-        this.size +
-        "vh;" +
-        "position: absolute;" +
-        "z-index: 9;";
+        "margin:auto;" + "background-image: url(" + this.imgUrl + ");" +
+        "background-size:100%;" + "opacity:0.6;" + "background-blend-mode: darken;" +
+        "height: " + this.size + "vh;" + "position: absolute;" + "z-index: 9;";
     node.style.cssText = text;
   }
 }
@@ -168,9 +156,8 @@ $(document).ready(() => {
   sockio.on("relay_feedback", Relays.set)
 
   sockio.on("mode", (msg) => {
-    // console.log(msg?.value);
     Relays.modget.checked = msg?.value;
-    Relays.change(Relays.modget);
+    Relays.change();
   });
 
   sockio.on("status", (msg) => {
