@@ -1,13 +1,13 @@
-version: '3'
+version: '2'
 
 services:
-  server:
+  python:
     container_name: iot-minigh 
-    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - 80:5000
+    volumes:
+      - .
     devices:
       - "/dev/gpiomem:/dev/gpiomem"
+    command: bash -c "python code/my_script.py"
